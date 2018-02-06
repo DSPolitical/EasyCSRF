@@ -12,6 +12,16 @@ class EasyCSRF {
 		$this->session = $sessionProvider;
 	}
 
+	protected function getRemoteAddress()
+	{
+		if (isset($_SERVER['HTTP_CF_CONNECTING_IP']))
+			return $_SERVER['HTTP_CF_CONNECTING_IP'];
+		if (isset($_SERVER['HTTP_X_FORWARDED_FOR']))
+			return $_SERVER['HTTP_X_FORWARDED_FOR'];
+
+		return $_SERVER['REMOTE_ADDR'];
+	}
+
 	/**
 	 * Generate a CSRF token
 	 *
@@ -26,7 +36,7 @@ class EasyCSRF {
 		// time() is used for token expiration
 		$token = base64_encode(time() . $extra . $this->randomString(32));
 		$this->session->set($this->session_prefix . $key, $token);
-		$this->session->set($this->session_prefix . $key . '_host', $_SERVER['REMOTE_ADDR'] . $_SERVER['HTTP_USER_AGENT']);
+		$this->session->set($this->session_prefix . $key . '_host', $this->getRemoteAddress() . $_SERVER['HTTP_USER_AGENT']);
 
 		return $token;
 	}
@@ -56,12 +66,12 @@ class EasyCSRF {
 			$this->session->set($this->session_prefix . $key, null);
 		}
 
-		if (sha1($_SERVER['REMOTE_ADDR'] . $_SERVER['HTTP_USER_AGENT']) != substr(base64_decode($session_token), 10, 40)) {
+		if (sha1($this->getRemoteAddress() . $_SERVER['HTTP_USER_AGENT']) != substr(base64_decode($session_token), 10, 40)) {
 			$message = 'Form origin does not match token origin.';
 
 			$host = $this->session->get($this->session_prefix . $key . '_host');
 			if ($host)
-				$message .= ' Expected "' . $_SERVER['REMOTE_ADDR'] . $_SERVER['HTTP_USER_AGENT'] . '", got "' . $host . '"';
+				$message .= ' Expected "' . $this->getRemoteAddress() . $_SERVER['HTTP_USER_AGENT'] . '", got "' . $host . '"';
 			throw new \Exception($message);
 		}
 
