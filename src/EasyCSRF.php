@@ -32,7 +32,7 @@ class EasyCSRF {
 	{
 		$key = $result = preg_replace('/[^a-zA-Z0-9]+/', '', $key);
 
-		$extra = sha1($_SERVER['REMOTE_ADDR'] . $_SERVER['HTTP_USER_AGENT']);
+		$extra = sha1($this->getRemoteAddress() . $_SERVER['HTTP_USER_AGENT']);
 		// time() is used for token expiration
 		$token = base64_encode(time() . $extra . $this->randomString(32));
 		$this->session->set($this->session_prefix . $key, $token);
